@@ -1,6 +1,6 @@
 # PruneMobileとは
 
-複数の人間や自動車等の移動体のリアルタイムの位置情報を、地図上に表示する、PruneClusterのアプリーケーションです。
+複数の人間や自動車等の移動体のリアルタイムの位置情報を、地図上に表示する、PruneCluster(https://github.com/SINTEF-9012/PruneCluster)のアプリーケーションです。
 
 PruneMobileのサーバに対して、任意のタイミングで位置情報を送り込むだけで、地図上にマーカーが表示されます。
 
@@ -75,6 +75,10 @@ $ go run clientX.go (Xは数字)
 
 ## 動作の様子
 ![](./PruneMobile_demo.png)
+
+
+
+
 
 # クライアントプログラムで使うI/F(データ形式)
 
