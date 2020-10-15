@@ -1,5 +1,5 @@
 /*
-// server12.go ペアはclient7.go
+// server13.go ペアはclient8.go
 
 // Copyright 2015 The Gorilla WebSocket Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
@@ -8,7 +8,7 @@
 // +build ignore
 
 // 使い方
-// go run server9.go      (適当なシェルから)
+// go run server13.go      (適当なシェルから)
 // http://localhost:8080  (ブラウザ起動)
 */
 
