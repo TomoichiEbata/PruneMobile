@@ -12,7 +12,7 @@ https://www.kobore.net/diary/?date=20191004
 
 ## 使用環境
 
-- golang(Go言語)のインストールされていれば良いです。私(江端智一)の環境では以下のようになっています。
+- golang(Go言語)のインストールされていれば良いです。私の環境では以下のようになっています。
 ```
 $ PruneMobile\server>go version
 $ go version go1.14 windows/amd64
