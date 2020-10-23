@@ -7,7 +7,6 @@ PruneCluster https://github.com/SINTEF-9012/PruneCluster
 PruneMobileに対して、任意のタイミングで位置情報(JSON形式)を送り込むだけで、地図上にマーカーが表示されます。
 
 ## コード公開の方針
-以下をご一読下さい。
 https://www.kobore.net/diary/?date=20191004
 
 
