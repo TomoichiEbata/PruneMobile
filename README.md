@@ -6,13 +6,9 @@ PruneCluster https://github.com/SINTEF-9012/PruneCluster
 
 PruneMobileに対して、任意のタイミングで位置情報(JSON形式)を送り込むだけで、地図上にマーカーが表示されます。
 
-## コード公開の方針
-https://www.kobore.net/diary/?date=20191004
-
-
 ## 使用環境
 
-- golang(Go言語)のインストールされていれば良いです。私の環境では以下のようになっています。
+- golang(Go言語)のインストールされていれば良いです。私(江端智一)の環境では以下のようになっています。
 ```
 $ PruneMobile\server>go version
 $ go version go1.14 windows/amd64
@@ -55,7 +51,7 @@ var map = L.map("map", {
 
 # サンプルプログラムの動作方法
 
-## Step 1 サーバとブラウザの起動
+## Step 1 サーバの起動
 
 適当なシェルを立ち上げて
 ```
@@ -64,15 +60,14 @@ $ go run serverX.go (Xは数字)
 ```
 とすると、「Windowsセキュリティの重要な警告(windows10の場合)」が出てくるので、「アクセスを許可する」ボタンを押下して下さい。
 
-次にChromoブラウザ(他のブラウザのことは知らん)から、
+## Step 2 地図画面(マーカ表示画面)の起動
+Chromoブラウザ(他のブラウザのことは知らん)から、
 ```
 http://localhost:8080/
 ```
 と入力して下さい。豊洲地区の地図が表示されます。
 
-**サーバ立ち上げ→ブラウザ起動は1セットで行って下さい。ブラウザは最初の1つだけが有効です**
-
-## Step 2 クライアントの起動
+## Step 3 移動オブジェクト(マーカの対象)の起動
 適当なシェルを立ち上げて
 ```
 $ cd PruneMobile\client
@@ -83,12 +78,7 @@ $ go run clientX.go (Xは数字)
 ## 動作の様子
 ![](./PruneMobile_demo.png)
 
-## Step 3 スマホ画面の起動
-server2X.goより、スマホから手動でマーカーが入力できるようになりました。
-```
-http://localhost:8080/smartphone
-```
-と入力して下さい。"send"ボタンを押下することで、オブジェクトがランダムに動きます。
+
 
 
 
@@ -187,5 +177,55 @@ IDを"0"にして、最初のマーカーの座標を入力したJSONを、サ�
 	log.Printf("after Lng:%f", gl2.Lng)
 ```
 
-以上
+# Amazon Lightsail を使った、スマホの現在位置の表示方法
+
+PruneMobileは、シミュレータ等で計算した位置情報を、ブラウザで表示することを目的としたものですが、これを、現実のスマホの位置の検知にも使えるようにしました(要するに「ココセコム」としても使える、ということです)
+
+これを実現する為には、インターネット上に(クラウド)サーバを置かなければなりません。AWSのVPS(仮想専用サーバー)が思いつきますが、AWSのEC2は6運用が面倒な上に使用料が高価です。そこで「月額 500 円で使えるAWSクラウドのVPS」を使う方法について記載しておきます。
+
+- Amazon Lightsail の立ち上げ方法については、https://wp.kobore.net/江端さんの技術メモ/post-1513/ を参考にして下さい。
+
+- ここでは、"sea-anemone.tech"という架空のドメインを例として使っていますが、外部(例えば「お名前.com」)でドメインを得た場合は、その名前に置き換えて読んで下さい。
+
+
+- 公開鍵の取得方法については、https://wp.kobore.net/江端さんの技術メモ/post-1550/ を参考にして下さい(ここに記載されている、"go_template/server_test"は、"PruneMobile\vps_server"と読み換えて下さい)
+
+
+## Step 1 サーバの起動
+
+Amazon Lightsailのシェルから適当なシェルを立ち上げて
+```
+$ cd PruneMobile\vps_server
+$ go run serverXX.go (Xは数字)
+```
+
+と起動して下さい。
+
+## Step 2 地図画面(マーカ表示画面)の起動
+Chromoブラウザ(他のブラウザのことは知らん)から、
+```
+https://sea-anemone:8080/
+```
+と入力して下さい。現在は、東京のある地域が表示されますが、serverXX.go の中に記載れている、位置情報、35.60000, 139.60000 を片っぱしから、任意の位置(自宅の位置等)に変更することで、自宅付近での実証実験ができます。
+自宅の情報は、GoogleMAPから取得できます。
+
+## Step 3 移動オブジェクト(マーカの対象)の起動
+スマホのブラウザから、
+```
+https://sea-anemone:8080/smartphone
+```
+として、[open]ボタンを押して下さい。スマホで位置測位が開始されます(この際、位置情報を提供して良いか、と聞きあれることがありますので、"OK"として下さい)。
+[close]ボタンを押下すると地図画面からマーカが消えます。
+
+## 現時点で確認している問題点で、いずれ直すもの
+
+- ローカルのjs(javascript)のローディングに失敗した為、江端のプライベートサーバ(kobore.net)からローディングしている。PruneMobile\vps_server\serverXX.goの以下を参照
+```
+	<script src="http://kobore.net/PruneCluster.js"></script>
+	<link rel="stylesheet" href="http://kobore.net/examples.css"/>
+```
+- 動作中にwebsocketが切断してしまった時(スマホの閉じる、別のブラウザ画面を立ち上げた時)、オブジェクトが放置されて、システム全体が動かなくなる
+
+
+
 
