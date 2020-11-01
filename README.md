@@ -183,12 +183,12 @@ PruneMobileは、シミュレータ等で計算した位置情報を、ブラウ
 
 これを実現する為には、インターネット上に(クラウド)サーバを置かなければなりません。AWSのVPS(仮想専用サーバー)が思いつきますが、AWSのEC2は運用が面倒な上に使用料が高価です。そこで「月額 500 円で使えるAWSクラウドのVPS」を使う方法について記載しておきます。
 
-- Amazon Lightsail の立ち上げ方法については、https://wp.kobore.net/江端さんの技術メモ/post-1513/ を参考にして下さい。
+- Amazon Lightsail の立ち上げ方法については、<a href="https://wp.kobore.net/江端さんの技術メモ/post-1513/">こちら</a> を参考にして下さい。
 
 - ここでは、"sea-anemone.tech"という架空のドメインを例として使っていますが、外部(例えば「お名前.com」)でドメインを得た場合は、その名前に置き換えて読んで下さい。
 
 
-- 公開鍵の取得方法については、https://wp.kobore.net/江端さんの技術メモ/post-1550/ を参考にして下さい(ここに記載されている、"go_template/server_test"は、"PruneMobile\vps_server"と読み換えて下さい)
+- 公開鍵の取得方法については、<a href="https://wp.kobore.net/江端さんの技術メモ/post-1550/">こちら</a>を参考にして下さい(ここに記載されている、"go_template/server_test"は、"PruneMobile\vps_server"と読み換えて下さい)
 
 
 ## Step 1 サーバの起動
