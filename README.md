@@ -195,7 +195,7 @@ PruneMobileは、シミュレータ等で計算した位置情報を、ブラウ
 
 Amazon Lightsailのシェルから適当なシェルを立ち上げて
 ```
-$ cd PruneMobile\vps_server
+$ cd PruneMobile\vps_server    (江端の環境では、~/go_template/server_test/ )
 $ go run serverXX.go (Xは数字)
 ```
 
