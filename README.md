@@ -227,5 +227,7 @@ https://sea-anemone.tech:8080/smartphone
 - 動作中にwebsocketが切断してしまった時(スマホの閉じる、別のブラウザ画面を立ち上げた時)、オブジェクトが放置されて、システム全体が動かなくなる
 
 
+## ローカルでの通信のペア
+server22.go と client9.go 
 
 
