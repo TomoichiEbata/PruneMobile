@@ -1,0 +1,382 @@
+// メインループ等の処理はhpp側に実装
+#pragma once
+#include <string>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <stdlib.h>
+
+#include "Clock.hpp"
+#include "User.hpp"
+#include "Bus.hpp"
+#include "UserActionPlanList.hpp"
+#include "BusControlCenter.hpp"
+#include "BusDepartureTimeList.hpp"
+#include "BusRoutePlanList.hpp"
+//#include "pqpp/pq.hpp
+//#include "agent.hpp"
+
+#include "data_class.hpp"
+
+// added by Ebata 2021/01/04
+#include "simple_udp.h"
+
+constexpr int HOURS = 24; // 24 hours per day
+
+
+// 初期化・メインループの処理・終了処理を行うクラス
+class Scenario {
+	//DatabaseSystem m_kashiwanoha_db;
+	Clock m_clock;
+	int m_overall_loop_count; // ループカウント
+
+	BusControlCenter m_bus_control_center;
+
+	std::vector<Bus> m_buses;
+	std::vector<BusDepartureTimeList> m_timetables;
+
+	std::vector<User> m_users;
+	std::vector<UserActionPlanList> m_user_actions;
+
+	// タイムウィンドウ処理
+	int m_sec_per_timestep;
+	int m_prev_timewindow;
+
+	//User create_user();
+	//User create_user(pq::row_t& record);
+	// Bus create_bus(int bus_id);
+	// BusDepartureTimeList create_bus_departure_time_list(int bus_id);
+	BusRoutePlanList create_basic_bus_route_plan_list(int bus_route_id, bool backward);
+
+	void define_and_set_user_action_plan(User* user, const int bus_route_id);
+
+	// int move_bus_oneway_one_step(int bus_id);
+
+	// ノードnode_id上にいるUserオブジェクト一覧を返す
+	std::vector<User*> listup_user_on_node(int node_id);
+
+	void get_users_on_bus_when_they_want(int bus_id);
+	void get_users_off_bus_when_they_want(int bus_id);
+
+	// // ログ書き出し機能
+	// void finalize_unreached_buses();
+	// void finalize_unreached_users();
+	// void write_user_params();
+	// void write_summary();
+	void write_user_params_go();
+	void finalize_unreached_buses_go();
+	void finalize_unreached_users_go();
+	void write_summary_go();
+	void write_dissatisfaction_summary_go(const std::vector<int>& dissatisfaction_vec);
+
+	void create_user_go(UserParam user_param, User& user);
+
+	void create_bus_go(int bus_id, BusParam bus_param, Bus& bus);
+	BusDepartureTimeList create_bus_departure_time_list_go(int bus_id, std::vector<BusDepartureTime> bus_departure_time_vector_vector);
+	BusRoutePlanList create_basic_bus_route_plan_list_go(int bus_route_id, bool backward, const std::vector<BusStop> bus_stop_vector);
+
+	int move_bus_oneway_one_step_go(int bus_id, std::vector<BusStop> bus_stop_vector);
+public:
+	Scenario(
+		// const std::string & db_name,
+		// const std::string & db_user,
+		// const std::string & db_password,
+		int sec_per_timestep,
+		int date_index,
+		int solver_mode,
+		// const std::vector<double>& lambdas)
+		// : m_kashiwanoha_db(db_name, db_user, db_password),
+		//  m_clock(seconds_f(sec_per_timestep), date_index),
+		//  m_bus_control_center(&m_kashiwanoha_db, solver_mode, lambdas),
+		//  m_overall_loop_count(24 * 3600 / sec_per_timestep) // 24時間
+ 		const std::vector<double>& lambdas)
+ 		: m_clock(seconds_f(sec_per_timestep), date_index),
+ 		 m_bus_control_center(solver_mode, lambdas),
+ 		 m_overall_loop_count(24 * 3600 / sec_per_timestep) // 24時間
+	{
+		m_sec_per_timestep = sec_per_timestep;
+		assert(sec_per_timestep > 0);
+		assert(m_overall_loop_count > 0);
+	};
+	~Scenario(){};
+
+	int test;
+
+	// void initialize(int initialize_user);
+	// void mainloop();
+	// void finalize();
+
+	//　go 言語用の関数
+	void initialize_go(int max_user_id, int max_bus_id, std::vector<UserParam> user_param_vector, 
+		const std::vector<BusParam>& bus_param_vector,
+		const std::vector<std::vector<BusDepartureTime>>&  bus_departure_time_vector_vector, 
+		const std::vector<std::vector<BusStop>>&  bus_stop_vector_vector)
+	{
+
+			std::cout << "Start initialize_go " << std::endl;
+
+			// ユーザーの登録
+			for (int user_index = 0; user_index <= max_user_id; user_index++) {
+					User user(&m_clock);
+					std::cout << "create_user_go : " << user_param_vector.at(user_index).GetId() << std::endl;
+					create_user_go(user_param_vector.at(user_index), user);
+					// std::cout << "V1 C1 : " << user_param_vector.at(user_index).GetV1() << user_param_vector.at(user_index).GetC1() << std::endl;
+					// std::cout << "hh mm ss : " << user_param_vector.at(user_index).GetMh1() << " " << user_param_vector.at(user_index).GetMm1() << " " << user_param_vector.at(user_index).GetMs1() << std::endl;
+					// Userの出発時刻・到着時刻を確率パラメータに従って決定しておく。(DEBUGコードあり)
+
+					// std::cout << "decide_request_time : " << std::endl;
+				 	user.decide_request_time(HOURS);
+
+					// std::cout << "push_back : " << std::endl;
+				 	m_users.push_back(std::move(user));
+					// 確認
+					// user.debug_print();
+			}
+
+			// User user(&m_clock);
+			// m_users.push_back(std::move(user));
+			// std::cout << "max_bus_id : " << max_bus_id << std::endl;
+			// std::cout << "vector size : " << bus_param_vector.size() << std::endl;
+			// バスオブジェクト関係の生成
+			for (int bus_index = 0; bus_index < max_bus_id; bus_index++) {
+					// std::cout << "bus_index : " << bus_index << std::endl;
+					Bus bus(&m_clock);
+					// std::cout << "create_bus_go" << std::endl;
+					create_bus_go(bus_index, bus_param_vector.at(bus_index), bus);
+					// std::cout << "create_bus_departure_time_list_go" << std::endl;
+					// std::cout << "bus_id " << bus_index << std::endl;
+					BusDepartureTimeList timetable = create_bus_departure_time_list_go(bus_index, bus_departure_time_vector_vector.at(bus_index));
+					// std::cout << "create_basic_bus_route_plan_list_go" << std::endl;
+					// std::cout << "create_basic_bus_route_plan_list_go" << std::endl;
+					// std::cout << bus.route_id() << std::endl;
+					// std::cout << timetable.front().second << std::endl;
+					BusRoutePlanList route = create_basic_bus_route_plan_list_go(bus.route_id(), timetable.front().second, bus_stop_vector_vector.at(bus_index));
+					// std::cout << "set_route" << std::endl;
+					bus.set_route(route);
+
+					// std::cout << "m_buses" << std::endl;
+					m_buses.push_back(std::move(bus));
+					// std::cout << "m_timetables" << std::endl;
+					m_timetables.push_back(std::move(timetable));
+
+					// 確認
+					//bus.debug_print();
+					// std::cout << "bus.current_node_id()" << std::endl;
+					// std::cout << bus.current_node_id() << std::endl;
+
+			}
+
+			// この時点で、住民とバスの数は固定である
+			m_bus_control_center.set_holders(m_buses, m_users);
+
+			// // DEBUG ログの重複をデバッグ用に回避
+			// m_kashiwanoha_db.delete_existing_data_of_date(m_clock.date_index());
+
+			LOG_I << "INITIALIZATION PART END";
+		}
+	;
+
+	void mainloop_go(std::vector<std::vector<BusStop>> bus_stop_vector_vector, int time_window, int ondemand_bus_num, int in_questionnaire)
+	{
+	  // Ebata added simple_udp 2021/01/05
+	  simple_udp udp0("192.168.0.8",12345);
+	  
+		// BUSSTOPのデバッグ確認
+		for (int i = 0; i < int(bus_stop_vector_vector.size()); i++) {
+			for (int j=0; j < int(bus_stop_vector_vector[i].size()); j++) {
+				LOG_I << "INITIAL_BUSSTOPS:" << i << "," << j << "," << 
+					bus_stop_vector_vector[i][j].GetName();
+			}
+		}
+		//int time_step = 5;
+		LOG_I << "MAINLOOP PART BEGIN";
+
+		LOG_I << "Start moving at:";
+		m_clock.show();
+
+		m_prev_timewindow = 0;
+		// 12:00まで時間を進める
+		// for (int i = 1; i <= (24 * 60); i++) {
+		// for (int i = 1; i <= (12 * 60); i++) {
+		// 24:00まで時間を進める(timeste	p=60s設定)
+		for (int i = 0; i < m_overall_loop_count; i++) {
+			m_clock.forward();
+			std::vector<MovingRequest> request_pool;
+
+			for (User& user : m_users)
+			{
+				//std::cout << "now " << time_as_text(m_clock.now()) << std::endl;
+
+				// 時間になったら、リクエストを発行してアクティブになる。
+				user.move_myself();
+				if (user.try_prepare_request()) {
+
+					std::cout << "now " << time_as_text(m_clock.now()) << std::endl;
+					// リクエスト発行
+					MovingRequest request = user.create_moving_request();
+					user.random_increase_coeff(0.1 / 3600); // [s^-1]
+					// 不満度をセットする
+					request.set_dissatisfaction_questionnaire(user.dissatisfaction_questionnaire());
+
+					// ここで、リクエスト発行情報を吐き出す。
+					const auto& dissat = user.dissatisfaction();
+					// // m_kashiwanoha_db.write_new_moving_request(
+					// // 	request.id(), user.id(), m_clock.date_index(), time_as_text(m_clock.now(), "%H:%M:%S"),
+					// // 	to_wkt_geometry_point(user.current_xy()),
+					// // 	dissat.value_time(), dissat.value_crowd(), dissat.value_seat(), dissat.value_loudness(), dissat.value_position(),
+					// // 	dissat.coeff_time(), dissat.coeff_crowd(), dissat.coeff_seat(), dissat.coeff_loudness(), dissat.coeff_position(),
+					// // 	user.buspoint(), time_as_text(m_clock.now(), "%H:%M:%S")
+					// // );
+					// DBに挿入
+					// std::string sql = "INSERT INTO moving_request " ;
+					// sql = sql + "(id, user_id, date_index, time_before, position_before, " +
+					// 	"dissatisfaction_value_time_before, dissatisfaction_value_crowd_before, dissatisfaction_value_seat_before, dissatisfaction_value_loudness_before, dissatisfaction_value_position_before, " +
+					// 	"dissatisfaction_coeff_time_before, dissatisfaction_coeff_crowd_before, dissatisfaction_coeff_seat_before, dissatisfaction_coeff_loudness_before, dissatisfaction_coeff_position_before, " +
+					// 	"buspoint_before, target_time)  " +
+					// 	"values  " +
+					// 	"("+ request.id() +", "+ user.id() + ", " + m_clock.date_index() + ", " + time_as_text(m_clock.now(), "%H:%M:%S") + ", " +
+					// 	"st_geomfromtext($5, 4326), " + to_wkt_geometry_point(user.current_xy()) +
+					// 	", "+dissat.value_time()+", "+dissat.value_crowd()+", "+dissat.value_seat()+", "+dissat.value_loudness()+", "+dissat.value_position()+", " +
+					// 	""+dissat.coeff_time()+", "+dissat.coeff_crowd()+", "+dissat.coeff_seat()+", "+dissat.coeff_loudness()+", "+dissat.coeff_position() +
+					// 	", "+user.buspoint()+", "+time_as_text(m_clock.now(), "%H:%M:%S")+"); ";
+
+					std::stringstream ss_info;
+					ss_info << "INSERT INTO moving_request"
+						<< "(id, user_id, date_index, time_before, position_before, "
+						<<	"dissatisfaction_value_time_before, dissatisfaction_value_crowd_before, dissatisfaction_value_seat_before, dissatisfaction_value_loudness_before, dissatisfaction_value_position_before, "
+						<<	"dissatisfaction_coeff_time_before, dissatisfaction_coeff_crowd_before, dissatisfaction_coeff_seat_before, dissatisfaction_coeff_loudness_before, dissatisfaction_coeff_position_before, "
+						<<	"buspoint_before, target_time)  "
+						<<	"values  "
+						<<	"("<< request.id() <<", "<< user.id() << ", " << m_clock.date_index() << ", '" << time_as_text(m_clock.now(), "%H:%M:%S") << "', "
+						<<	"st_geomfromtext('" << to_wkt_geometry_point(user.current_xy()) <<"', 4326), " << dissat.value_time()
+						<<	", "<<dissat.value_crowd()<<", "<<dissat.value_seat()<<", "<<dissat.value_loudness()<<", "<<dissat.value_position()<<", "
+						<<  dissat.coeff_time()<<", "<<dissat.coeff_crowd()<<", "<<dissat.coeff_seat()<<", "<<dissat.coeff_loudness()<<", "<<dissat.coeff_position()<<", "
+						<<	user.buspoint()<<", '"<<time_as_text(m_clock.now(), "%H:%M:%S")<<"'); ";
+
+					// ファイルに出力し、Goから実行する
+					std::ofstream outputfile("./sql_exec/sql.txt");
+					// outputfile << sql;
+					outputfile << ss_info.str();
+					outputfile.close();
+
+				  char command_buf[] = "go run db_query.go";
+				  system(command_buf);
+
+					request_pool.push_back(std::move(request));
+
+					// 内容確認
+					//request.debug_print();
+				}
+				else {
+					if (user.try_deactivate() == true)
+					{
+						// ここで、リクエスト消化ログを吐き出す。
+						user.output_moving_request_result_to_db();
+					}
+				}
+
+				// added by Ebata 2021/01/04
+				std::cout << "Ebata:User:  " << user.id() << "," << user.current_xy().x() << "," << user.current_xy().y() << std::endl;
+
+				// simple_udp udp0("192.168.0.8",12345);
+				udp0.udp_send("hello!");
+				
+			}
+
+			// ソルバ起動に伴う処理のため、リクエストをBusControlCenterに渡す。
+			m_bus_control_center.receive_requests_if_any(std::move(request_pool));
+
+			// 時間になった場合ソルバ起動
+			// FIXME iは分指定が前提？
+			int act_time = (i - m_prev_timewindow) * m_sec_per_timestep;
+			//指定のタイムウインドウ幅になるか、幅の指定が0の時に実行
+			// 5件たまっていても実行
+			// std::cout << "i " << i << std::endl;
+			// std::cout << "m_prev_timewindow " << m_prev_timewindow << std::endl;
+			// std::cout << "m_sec_per_timestep " << m_sec_per_timestep << std::endl;
+			// std::cout << "act_time " << act_time << std::endl;
+			// std::cout << "time_window " << time_window << std::endl;
+			// std::cout << "request num " << m_bus_control_center.get_request_num() << std::endl;
+
+			if (act_time >= time_window || time_window == 0 || m_bus_control_center.get_request_num() >= 5)
+			{
+				// std::cout << "window_time " << window_time << std::endl;
+				// std::cout << "time_step " << time_step << std::endl;
+				// std::cout << "request num " << m_bus_control_center.get_request_num() << std::endl;
+				m_bus_control_center.consume_requests_if_any_go(ondemand_bus_num, in_questionnaire, m_users, m_timetables);
+				m_prev_timewindow = i;
+			}
+
+			for (Bus& bus : m_buses)
+			{
+				move_bus_oneway_one_step_go(bus.id(), bus_stop_vector_vector.at(bus.id()));
+
+				// added by Ebata 2021/01/04
+				std::cout << "Ebata:Bus:  " << bus.id() << "," << bus.current_xy().x() << "," << bus.current_xy().y() << std::endl;
+			}
+		}
+
+		LOG_I << "End moving at:";
+		m_clock.show();
+
+		// 移動履歴を確認する
+		LOG_I << "Show moving history:";
+		for (int user_id = 0; user_id < m_users.size(); user_id++) {
+			LOG_I << "User#" << user_id;  /* LOG_T */
+			m_users[user_id].show_moving_history_list();
+		}
+		for (int bus_id = 0; bus_id < m_buses.size(); bus_id++) {
+			LOG_I << "Bus#" << bus_id;
+			m_buses[bus_id].show_moving_history_list();
+		}
+
+		//	// 未着の場合は「finalize()」関数で処理
+		LOG_I << "MAINLOOP PART END";
+	};
+
+	void finalize_go(std::vector<int>& qdata) {
+		LOG_I << "FINALIZATION PART BEGIN";
+
+		// バスが終点についていない場合のログ出力
+		LOG_I << "finalize_unreached_buses";
+		finalize_unreached_buses_go();
+
+		// ユーザーが終点についていない場合のリクエストのログ出力
+		LOG_I << "finalize_unreached_users";
+		finalize_unreached_users_go();
+
+		// 住民の繰り越し情報（アンケート）をDB（user_params）に書く
+		LOG_I << "write_user_params";
+		write_user_params_go();
+
+		// エリア満足度・バスの総収入・総走行距離のsummaryを計算してDBに書き出す
+		LOG_I << "write_summary";
+		write_summary_go();
+
+		// 不満度更新用の配列を作成 & 不満度集計
+		for (User& user : m_users)
+		{
+			qdata.push_back(user.dissatisfaction_questionnaire());
+		}
+
+		write_dissatisfaction_summary_go(qdata);
+
+		LOG_I << "FINALIZATION PART END";
+	};
+
+	std::vector<std::string> split(std::string& input, char delimiter)
+	{
+	    std::istringstream stream(input);
+	    std::string field;
+	    std::vector<std::string> result;
+	    while (getline(stream, field, delimiter)) {
+	        result.push_back(field);
+	    }
+	    return result;
+	};
+
+};
