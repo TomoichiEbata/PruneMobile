@@ -6,7 +6,7 @@ https://wp.kobore.net/江端さんの技術メモ/post-1959/
 https://wp.kobore.net/江端さんの技術メモ/post-2051/
 
 (2)ビッグデータを使ったシミュレーションについては、以下のようにする(思い出せ>私)
-go run simple_csv_1_socket.go
+go run pm_proxy3_1_socket.go
 go run server22-1.go
 http://localhost:8080
 以上
