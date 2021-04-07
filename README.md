@@ -228,7 +228,7 @@ https://sea-anemone.tech:8080/smartphone
 
 
 ## ローカルでの通信のペア
-server22.go と client9.go 
+server22.go と client9.go   // 江端のローカル環境では、 ~/go_template/tests にある
 
 ## デモシミュレーションのペア
 server22-1.go と pm_proxy3_1_socket.go
