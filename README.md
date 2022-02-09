@@ -43,11 +43,13 @@ var map = L.map("map", {
 
 - ~~Webブラウザの表示が、最初の1つめしか、正常に動作しない~~
 
-- ローカルのjs(javascript)のローディングに失敗した為、江端のプライベートサーバ(kobore.net)からローディングしている。PruneMobile\server\serverX.goの以下を参照
+- ~~ローカルのjs(javascript)のローディングに失敗した為、江端のプライベートサーバ(kobore.net)からローディングしている。PruneMobile\server\serverX.goの以下を参照~~
 ```
 	<script src="http://kobore.net/PruneCluster.js"></script>
 	<link rel="stylesheet" href="http://kobore.net/examples.css"/>
 ```
+ → https://wp.kobore.net/江端さんの技術メモ/post-5280/ に解決方を記載
+
 
 # サンプルプログラムの動作方法
 
@@ -219,11 +221,13 @@ https://sea-anemone.tech:8080/smartphone
 
 ## 現時点で確認している問題点で、いずれ直すもの
 
-- ローカルのjs(javascript)のローディングに失敗した為、江端のプライベートサーバ(kobore.net)からローディングしている。PruneMobile\vps_server\serverXX.goの以下を参照
+- ~~ローカルのjs(javascript)のローディングに失敗した為、江端のプライベートサーバ(kobore.net)からローディングしている。PruneMobile\vps_server\serverXX.goの以下を参照~~
 ```
 	<script src="http://kobore.net/PruneCluster.js"></script>
 	<link rel="stylesheet" href="http://kobore.net/examples.css"/>
 ```
+→ https://wp.kobore.net/江端さんの技術メモ/post-5280/ に解決方を記載
+
 - 動作中にwebsocketが切断してしまった時(スマホの閉じる、別のブラウザ画面を立ち上げた時)、オブジェクトが放置されて、システム全体が動かなくなる
 
 
