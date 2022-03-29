@@ -238,3 +238,4 @@ server22.go と client9.go   // 江端のローカル環境では、 ~/go_templa
 ## デモシミュレーションのペア
 server22-1.go と pm_proxy3_1_socket.go
 
+# serverXX.goの中身(簡単に忘れるのでメモ
