@@ -238,4 +238,11 @@ server22.go と client9.go   // 江端のローカル環境では、 ~/go_templa
 ## デモシミュレーションのペア
 server22-1.go と pm_proxy3_1_socket.go
 
-# serverXX.goの中身(簡単に忘れるのでメモ
+# serverXX.goの中身(簡単に忘れるのでメモ)
+## メモ
+- "echo"とは、prumeClusterに対して「クライアントのフリ」をして繋ぎにいくもの
+- "echo2"とは、prumeMobileがサーバとなって、クライアントを受けつけるもの
+- "homeTemplate"は、「クライアントのフリ」をする実体。prumeClusterへの接続は "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.css" やら、 "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.js"がやってくれるので、サーバアドレスとかは気にしなくてもいい(らしい)
+
+## 動き
+- クライアント → echo2 → echo → homeTemplateのjavascript → webブラウザ(での表示) の、一方通行の流れとなっている
