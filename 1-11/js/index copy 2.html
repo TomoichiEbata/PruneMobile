@@ -1,0 +1,101 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PruneMobile</title>
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.css"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.js"></script>
+
+	<script src="http://kobore.net/PruneCluster.js"></script>           <!--  これ、いずれローカルホストから取れるように換えるう -->
+	<link rel="stylesheet" href="http://kobore.net/examples.css"/>      <!--  これも、いずれローカルホストから取れるように換える -->
+
+</head>
+<body>
+    <div id="map"></div>
+
+
+    <script>
+        //function obj(id, lat, lng, type, popup){
+        //    this.id = id;
+        //    this.lat = lat;
+        //    this.lng = lng;
+        //    this.type = type;
+        //    this.popup = popup;
+        //}
+
+
+        const ws = new WebSocket('ws://localhost:5000/echo')
+
+        var map = L.map("map", {
+        attributionControl: false,
+        zoomControl: false
+        }).setView(new L.LatLng(35.654543, 139.795534), 18);
+        // }).setView(new L.LatLng(35.598563, 139.475528), 18); 広袴
+
+        L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+         detectRetina: true,
+         maxNativeZoom: 18
+        }).addTo(map);
+
+        var leafletView = new PruneClusterForLeaflet(1,1);  // (120,20)がデフォルト
+
+        ws.onopen = function (event) {
+            console.log('open')
+            ws.send(`hello from clent ${new Date().getTime()}`)
+            // setInterval(() => {
+            //     ws.send('hello from clent')
+            // }, 2000);
+	    }
+
+        //ws.onopen = e => {
+            //console.log('open')
+            //ws.send(`hello from clent ${new Date().getTime()}`)
+            // setInterval(() => {
+            //     ws.send('hello from clent')
+            // }, 2000);
+        //}
+
+        //ws.onclose = e => {
+        //    console.log('close')
+        //}
+
+    	// サーバを止めると、ここに飛んでくる
+    	ws.onclose = function(event) {
+    		//print("CLOSE");
+            ws.close();
+    		ws = null;
+    	}
+
+        //ws.onmessage = e => console.log(e.data)
+        ws.onmessage = function(event) {  // 受信したメッセージはここに飛んでくる
+            console.log("RESPONSE",event.data)
+            var obj = JSON.parse(event.data);
+            console.log("obj.id:",obj.id)
+            console.log("obj.lat:",obj.lat)
+            console.log("obj.lng:",obj.lng)
+            console.log("obj.type:",obj.type)
+            console.log("obj.popup:",obj.popup)
+
+            // (今のところは)ただのオウム返し
+            var json_obj = JSON.stringify(obj);
+			ws.send(json_obj);			
+
+        }
+            //	print("RESPONSE: " + evt.data);  // jsonメッセージの内容を表示
+			// データをJSON形式に変更
+		
+
+		//	personal_id = obj.id; // IDの取得(何回も取る必要はないが)
+		//	console.log("personal_id");			
+	//		console.log(personal_id);
+
+        ws.onerror = e => console.log(e.data)
+
+
+        map.addLayer(leafletView);
+
+    </script>
+</body>
+</html>

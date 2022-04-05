@@ -1,0 +1,164 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PruneMobile</title>
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.css"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0-beta.2.rc.2/leaflet.js"></script>
+
+	<script src="http://kobore.net/PruneCluster.js"></script>           <!--  これ、いずれローカルホストから取れるように換えるう -->
+	<link rel="stylesheet" href="http://kobore.net/examples.css"/>      <!--  これも、いずれローカルホストから取れるように換える -->
+
+</head>
+<body>
+    <div id="map"></div>
+
+
+    <script>
+        //function obj(id, lat, lng, type, popup){
+        //    this.id = id;
+        //    this.lat = lat;
+        //    this.lng = lng;
+        //    this.type = type;
+        //    this.popup = popup;
+        //}
+
+
+        const ws = new WebSocket('ws://localhost:5000/echo')
+
+        var map = L.map("map", {
+        attributionControl: false,
+        zoomControl: false
+        }).setView(new L.LatLng(35.654543, 139.795534), 18);
+        // }).setView(new L.LatLng(35.598563, 139.475528), 18); 広袴
+
+        L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+         detectRetina: true,
+         maxNativeZoom: 18
+        }).addTo(map);
+
+        var leafletView = new PruneClusterForLeaflet(1,1);  // (120,20)がデフォルト
+
+        ws.onopen = function (event) {
+            console.log('open')
+            //ws.send(`hello from clent ${new Date().getTime()}`)
+            // setInterval(() => {
+            //     ws.send('hello from clent')
+            // }, 2000);
+	    }
+
+        ws.onerror = e => console.log(e.data)
+
+        var markers = [];
+
+        ws.onmessage = function(event) {  // 受信したメッセージはここに飛んでくる
+            console.log("ONMESSAGE obj",event.data)
+            var obj = JSON.parse(event.data);
+            console.log("obj.id:",obj.id)
+            console.log("obj.lat:",obj.lat)
+            console.log("obj.lng:",obj.lng)
+            console.log("obj.type:",obj.type)
+            console.log("obj.popup:",obj.popup)
+
+            var i = obj.popup;
+
+            if (obj.id == -1) {
+                if (obj.type == "PERSON"){
+                    var marker = new PruneCluster.Marker(obj.lat, obj.lng, {
+                        popup: "Person " + i,
+                        icon: L.icon({
+                            //iconUrl: 'http://localhost:8080/static/person-icon.png', 
+                            iconUrl: 'http://kobore.net/soft/person-icon.png', 
+                        })
+                    });
+                }
+                else if (obj.type == "BUS"){
+                    var marker = new PruneCluster.Marker(obj.lat, obj.lng, {
+                        popup: "Bus " + i,
+                        icon: L.icon({
+                            //iconUrl: 'http://localhost:8080/static/bus-icon.png', 
+                            iconUrl: 'http://kobore.net/soft/bus-icon.png', 
+                        })
+                    });
+
+                }
+
+                console.log(marker.hashCode);		
+    			markers.push(marker);
+
+                leafletView.RegisterMarker(marker);
+	
+                console.log("markers:",markers);
+                console.log("markers.length:",markers.length)
+
+                var obj2 = 0;
+                obj2 = obj;
+
+                obj2.id = marker.hashCode;
+                console.log("return obj2.id:", obj2.id);
+                console.log("return obj2:", obj2);
+
+
+                //ws.send(marker.hashCode); // テキスト送信
+    			var json_obj = 0;
+                json_obj = JSON.stringify(obj2);
+                console.log("json_obj",json_obj)
+    			ws.send(json_obj);
+                //ws.send(obj)
+            } else if ((Math.abs(obj.lat) > 90.0) || (Math.abs(obj.lng) > 180.0)){ // 異常な座標が入った場合は、マーカーを消去する
+			    console.log("Math.abs(obj.lat) > 180.0)")
+			    //for (let i = 0; i < markers.length; ++i) {
+                for (let i = 0; i < markers.length; i++) {
+				    if (obj.id == markers[i].hashCode){
+					    console.log(i)
+					    console.log(obj.id)										
+					    console.log("obj.id == markers[i].hashCode")
+		
+                        //leafletView.RemoveMarkers(markers[obj.id]);  // これでは消えてくれません
+                        // 1つのマーカーを消すのに、面倒でも以下の2行が必要
+                        var deleteList = markers.splice(i, 1);					
+                        leafletView.RemoveMarkers(deleteList);
+
+                        break;
+                    }
+                }
+
+                obj.lat = 91.0;
+    			obj.lng = 181.0;
+	    		var json_obj = JSON.stringify(obj);
+	    		ws.send(json_obj);				
+
+            } else {
+			    // 位置情報更新
+			    console.log("else")
+			    for (let i = 0; i < markers.length; ++i) {
+				    if (obj.id == markers[i].hashCode){
+					    var ll = markers[i].position;
+					    ll.lat = obj.lat;
+					    ll.lng = obj.lng;
+					    break;
+				    }
+			    }
+			    var json_obj = JSON.stringify(obj);
+			    ws.send(json_obj);	
+		    }
+        }
+
+    	// 位置情報の更新
+        window.setInterval(function () {
+            leafletView.ProcessView();  // 変更が行われたときに呼び出されれなければならない
+	    }, 1000);
+
+	    // サーバを止めると、ここに飛んでくる
+	    ws.onclose = function(event) {
+		    //print("CLOSE");
+		    ws = null;
+	    }
+
+        map.addLayer(leafletView);
+
+    </script>
+</body>
+</html>
