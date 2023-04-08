@@ -246,3 +246,10 @@ server22-1.go と pm_proxy3_1_socket.go
 
 ## 動き
 - クライアント → echo2 → echo → homeTemplateのjavascript → webブラウザ(での表示) の、一方通行の流れとなっている
+
+## sea-anemone.techで長いこと使っていないと、色々忘れると思うので、とりあえず、これで思い出してみると良い
+- ~/PruneMobile/serverで go run server22.go
+- http://c-anemone.tech:8080 (httpsではないことに注意)
+- ~/PruneMobile/client で、go run client9.go
+
+
